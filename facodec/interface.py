@@ -50,16 +50,21 @@ class FACodec(nn.Module):
         fa_decoder.eval()
 
         return FACodec(fa_encoder, fa_decoder)
+    
+    def to(self,device):
+        super().to(device)
+        self.device=device
+        return self
 
-    def load_audio(audio_path):
+    def load_audio(self, audio_path):
         wav = librosa.load(audio_path, sr=16000, mono=True)[0]
-        wav = torch.from_numpy(wav).float()
+        wav = torch.from_numpy(wav).float().to(self.device)
         return wav
 
     @torch.no_grad()
     def get_codes_and_embedding(self, wav):
-        test_wav = test_wav.unsqueeze(0).unsqueeze(0)
-        enc_out = self.fa_encoder(test_wav)
+        wav = wav.unsqueeze(0).unsqueeze(0)
+        enc_out = self.fa_encoder(wav)
         vq_post_emb, vq_id, _, quantized, spk_embs = self.fa_decoder(
             enc_out, eval_vq=False, vq=True)
         prosody_code = vq_id[:1]
@@ -87,12 +92,14 @@ class FACodecVC(nn.Module):
         fa_redecoder = fa_redecoder
 
         fa_codec = FACodec.from_pretrain()
-        FACodecVC(fa_codec, fa_redecoder)
+        return FACodecVC(fa_codec, fa_redecoder)
 
     @torch.no_grad()
     def convert(self, speaker_from, content_to):
         wav_a = self.fa_codec.load_audio(speaker_from)
         wav_b = self.fa_codec.load_audio(content_to)
+        wav_a = wav_a.unsqueeze(0).unsqueeze(0)
+        wav_b = wav_b.unsqueeze(0).unsqueeze(0)
         enc_out_a = self.fa_codec.fa_encoder(wav_a)
         enc_out_b = self.fa_codec.fa_encoder(wav_b)
 
@@ -102,13 +109,20 @@ class FACodecVC(nn.Module):
             enc_out_b, eval_vq=False, vq=True)
 
         vq_post_emb_a_to_b = self.fa_redecoder.vq2emb(
-            vq_id_a, spk_embs_b, use_residual=False)
+            vq_id_b, spk_embs_a, use_residual=False)
         recon_wav_a_to_b = self.fa_redecoder.inference(
-            vq_post_emb_a_to_b, spk_embs_b)
+            vq_post_emb_a_to_b, spk_embs_a)
         return recon_wav_a_to_b
 
     def save_audio(self, wav, filename):
-        sf.write(filename, wav.numpy().squeeze(), 16000, 'PCM_16')
+        sf.write(filename, wav.cpu().numpy().squeeze(), 16000, 'PCM_16')
+
+    def to(self,device):
+        super().to(device)
+        self.fa_codec.to(device)
+        self.device=device
+        return self
 
     def forward(self, speaker_from, content_to):
-        self.convert(speaker_from, content_to)
+        return self.convert(speaker_from, content_to)
+
