@@ -564,6 +564,19 @@ class FACodecDecoder(nn.Module):
         if self.vq_num_q_r > 0 and use_residual_code:
             out += self.quantizer[2].vq2emb(vq[self.vq_num_q_p + self.vq_num_q_c :])
         return out
+    
+    def prosody2emb(self,prosody_codes):
+        self.quantizer = self.quantizer.eval()
+        out = 0
+        out += self.quantizer[0].vq2emb(prosody_codes)
+        return out
+
+    def content2emb(self,content_codes):
+        self.quantizer = self.quantizer.eval()
+        out = 0
+        out += self.quantizer[1].vq2emb(content_codes)
+        return out
+        
 
     def inference(self, x, speaker_embedding):
         style = self.timbre_linear(speaker_embedding).unsqueeze(2)  # (B, 2d, 1)

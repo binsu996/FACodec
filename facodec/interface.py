@@ -75,6 +75,12 @@ class FACodec(nn.Module):
     def get_codes_and_embedding_from_file(self, audio_path):
         wav = self.load_audio(audio_path)
         return self.get_codes_and_embedding(wav)
+    
+    def prosody2emb(self,prosody_codes):
+        return self.fa_decoder.prosody2emb(prosody_codes)
+
+    def content2emb(self,content_codes):
+        return self.fa_decoder.content2emb(content_codes)
 
 
 class FACodecVC(nn.Module):
