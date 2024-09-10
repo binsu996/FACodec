@@ -15,7 +15,7 @@ print(spk_embs.shape)
 
 # 将编码转换为embedding
 prosody_embedding=codec.prosody2emb(prosody_codes)
-content_embedding=codec.prosody2emb(content_codes)
+content_embedding=codec.content2emb(content_codes)
 
 print(prosody_embedding.shape)
 print(content_embedding.shape)
